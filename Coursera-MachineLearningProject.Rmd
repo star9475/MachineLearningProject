@@ -4,11 +4,6 @@ author: "Josh Starkey"
 date: "April 3, 2016"
 output: html_document
 ---
-
-```{r setup, include=FALSE,  cache=TRUE}
-knitr::opts_chunk$set(echo = TRUE)
-```
-
 ###Background
 
 This is project is a model prediction assignment. The goal is to use data from six participants from accelerometers on the belt, forearm, arm, and dumbell to predict the manner of the exercise:  if the barbell lifts were performed correctly and incorrectly in the following manner:
@@ -78,7 +73,7 @@ testdata.tidy <- testdata[, -grep("X|timestamp|window|user_name|min|max|var|avg|
 
 ###Slice the Training Data
 I divided the data into a training and test set.  I used a 60/40 split because a training set split of 60% is as high as I could go to increase the accuracy without killing my old laptop's memory.
-```{r, warning=FALSE, message=FALSE}
+```{r, warning=FALSE, message=FALSE, echo=TRUE}
 library(caret)
 set.seed(1565)
 inTrain <- createDataPartition(traindata.tidy$classe, p=0.6, list=FALSE)
@@ -94,21 +89,20 @@ Using the caret and randomforest packages, I trained the model using a random fo
 model.RF <- train(classe~.,data=training,method="rf",trControl=trainControl(method="cv",number=5),prox=TRUE)
 ```
 ####Print the model data
-```{r}
+```{r, echo=TRUE}
 model.RF
 ```
 Model iteration <code>mtry =2</code> is the optimal model.
 
-
 ####Print the best model
-```{r}
+```{r, echo=TRUE}
 model.RF$finalModel
 ```
 The final model had 500 trees.
 
 
 ####Train the model
-```{r, warning=FALSE, message=FALSE}
+```{r, warning=FALSE, message=FALSE, echo=TRUE}
 predict.Rf <- predict(model.RF, testing)
 confusionMatrix(testing$classe, predict.Rf)
 ```
