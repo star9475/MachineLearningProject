@@ -1,30 +1,122 @@
 ---
 title: "Coursera-Machine Learning Project"
 author: "Josh Starkey"
-date: "March 10, 2016"
-output: html_document
+date: "April 3, 2016"
+output: pdf_document
 ---
 
-```{r setup, include=FALSE}
+```{r setup, include=FALSE,  cache=TRUE}
 knitr::opts_chunk$set(echo = TRUE)
 ```
 
-## R Markdown
+###Background
 
-This is an R Markdown document. Markdown is a simple formatting syntax for authoring HTML, PDF, and MS Word documents. For more details on using R Markdown see <http://rmarkdown.rstudio.com>.
+This is project is a model prediction assignment. The goal is to use data from six participants from accelerometers on the belt, forearm, arm, and dumbell to predict the manner of the exercise:  if the barbell lifts were performed correctly and incorrectly in the following manner:
 
-When you click the **Knit** button a document will be generated that includes both content as well as the output of any embedded R code chunks within the document. You can embed an R code chunk like this:
+* Exactly according to the specification (Class A)
+* Throwing the elbows to the front (Class B)
+* Lifting the dumbbell only halfway (Class C)
+* Lowering the dumbbell only halfway (Class D)
+* Throwing the hips to the front (Class E)
 
-```{r cars}
-summary(cars)
+More information is available in the section <b>Weight Lifting Exercise Dataset</b> from the website here: <code>http://groupware.les.inf.puc-rio.br/har</code>.
+
+The class assignment is located : <code>https://www.coursera.org/learn/practical-machine-learning/peer/R43St/prediction-assignment-writeup</code>
+
+###Overview
+
+Create a report describing how the model was built, how cross validation was used, what the expected out of sample error is, and why the choices were made. Also use the prediction model to predict 20 different test cases.
+
+###Executive Summary
+I downloaded the training and test data sets, performed some exploratory analysis to get a feel for the data, and cleaned up the data to have a managable set of predictors.  Using the <code>caret</code> and <code>randomForest</code> packages, I trained a <b>Random Forest</b> model to predict the variable <b>classe</b>.  The final accuracy of the model was 98.99%, and the model predicted the 20 test variables accurately.
+
+###The Data
+Load the libraries; download the training and test datasets
+```{r, warning=FALSE, message=FALSE, cache=TRUE}
+library(caret)
+library(ggplot2)
+library(randomForest)
+
+if (!file.exists("data")) {
+    dir.create("data")
+}
+
+trainfile <- "pml-training.csv"
+testfile <- "pml-testing.csv"
+
+if (!file.exists(trainfile)) {
+     fileUrl <- "https://d396qusza40orc.cloudfront.net/predmachlearn/pml-training.csv"
+     download.file(fileUrl, destfile = "data/pml-training.csv", method = "libcurl")
+}
+
+if (!file.exists(testfile)) {
+     fileUrl <- "https://d396qusza40orc.cloudfront.net/predmachlearn/pml-testing.csv"
+     download.file(fileUrl, destfile = "data/pml-testing.csv", method = "libcurl")
+}
 ```
 
-## Including Plots
-
-You can also embed plots, for example:
-
-```{r pressure, echo=FALSE}
-plot(pressure)
+###Load the Data / Tidy the Data
+```{r, warning=FALSE, message=FALSE, cache=TRUE}
+traindata <- read.csv("data/pml-training.csv")
+testdata <- read.csv("data/pml-testing.csv")
 ```
 
-Note that the `echo = FALSE` parameter was added to the code chunk to prevent printing of the R code that generated the plot.
+Count which columns have missing values
+```{r}
+na_count <-sapply(traindata, function(y) sum(is.na(y)))
+data.frame(na_count)
+```
+
+The columns with min, max, var, avg, stddev, amp, kurt, and skew all have missing values.  They also appear to be calculations of raw data. 
+
+I remove the columns/data from the test and training data sets with id variables, timestamp info, and have missing values.  This leaves 52 features to run the model on the predictor variable <code>classe</code>.
+```{r}
+traindata.tidy <- traindata[, -grep("X|timestamp|window|user_name|min|max|var|avg|stddev|amp|kurt|skew", colnames(traindata))]
+
+testdata.tidy <- testdata[, -grep("X|timestamp|window|user_name|min|max|var|avg|stddev|amp|kurt|skew", colnames(traindata))]
+```
+
+###Slice the Training Data
+I divided the data into a training and test set.  I used a 60/40 split because a training set split of 60% is as high as I could go to increase the accuracy without killing my old laptop's memory.
+```{r, warning=FALSE, message=FALSE}
+library(caret)
+set.seed(1565)
+inTrain <- createDataPartition(traindata.tidy$classe, p=0.6, list=FALSE)
+training <- traindata.tidy[inTrain,]
+testing <- traindata.tidy[-inTrain,]
+
+dim(training); dim(testing)
+```
+
+###Model the Data
+Using the caret and randomforest packages, I trained the model using a random forest with 5 fold cross-validation.  I played with some different levels of CV.  Five-fold gave the better accuracy than three-fold.  But the higher I went, the more memory was being used and the model ended up puking on my slow laptop.  The Random Forest model was used because it is highly accurate, but slow and memory hogging.
+```{r, warning=FALSE, message=FALSE}
+model.RF <- train(classe~.,data=training,method="rf",trControl=trainControl(method="cv",number=5),prox=TRUE)
+```
+####Print the model data
+```{r}
+model.RF
+```
+Model iteration <code>mtry =2</code> is the optimal model.
+
+
+####Print the best model
+```{r}
+model.RF$finalModel
+```
+The final model had 500 trees.
+
+
+####Train the model
+```{r, warning=FALSE, message=FALSE}
+predict.Rf <- predict(model.RF, testing)
+confusionMatrix(testing$classe, predict.Rf)
+```
+The model has Accuracy of 98.99% with a 95% CI of (0.9875, 0.992).  The out-of-sample error rate is 1.01%.
+
+###Use the Test Data Set
+I predict the model on the downloaded test data set of 20 observations and print the results.
+```{r}
+quiz <- predict(model.RF, testdata.tidy[, -length(names(testdata.tidy))])
+quiz
+```
