@@ -435,10 +435,7 @@ confusionMatrix(testing$classe, predict.Rf)</code></pre>
 <div id="use-the-test-data-set" class="section level3">
 <h3>Use the Test Data Set</h3>
 <p>I predict the model on the downloaded test data set of 20 observations and print the results.</p>
-<pre class="r"><code>quiz &lt;- predict(model.RF, testdata.tidy[, -length(names(testdata.tidy))])
-quiz</code></pre>
-<pre><code>##  [1] B A B A A E D B A A B C B A E E A B B B
-## Levels: A B C D E</code></pre>
+<pre class="r"><code>quiz &lt;- predict(model.RF, testdata.tidy[, -length(names(testdata.tidy))])</code></pre>
 </div>
 
 

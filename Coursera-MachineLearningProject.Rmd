@@ -2,7 +2,7 @@
 title: "Coursera-Machine Learning Project"
 author: "Josh Starkey"
 date: "April 3, 2016"
-output: pdf_document
+output: html_document
 ---
 
 ```{r setup, include=FALSE,  cache=TRUE}
@@ -118,5 +118,5 @@ The model has Accuracy of 98.99% with a 95% CI of (0.9875, 0.992).  The out-of-s
 I predict the model on the downloaded test data set of 20 observations and print the results.
 ```{r}
 quiz <- predict(model.RF, testdata.tidy[, -length(names(testdata.tidy))])
-quiz
+
 ```
